@@ -12,7 +12,7 @@ const http = require('http');
 var http2 = require( "http" ).createServer( app );
 const unixDate = require("unix-timestamp");
 
-var io = require('socket.io')(port + 1);
+var io = require('socket.io')(http);
 const clientIO = require('socket.io-client');
 const numCPUs = require('os').cpus().length;
 let websocket = clientIO.connect('ws://socket.coincap.io')
