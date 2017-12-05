@@ -2,6 +2,7 @@ const path = require('path');
 var app = require('express')();
 const express = require('express');
 const bodyParser = require('body-parser');
+const WebSocket = require('ws');
 const port = process.env.PORT || 8000;
 const cors = require('cors');
 const corsOptions = { origin: true}
@@ -9,10 +10,10 @@ const logger = require('morgan');
 const knex = require('./db/knex');
 const cronJob = require('cron').CronJob;
 const http = require('http');
-var http2 = require( "http" ).createServer( app );
+var http2 = require( "http" ).createServer(app);
 const unixDate = require("unix-timestamp");
 
-var io = require('socket.io')(port + 1);
+var io = require('socket.io')(http);
 const clientIO = require('socket.io-client');
 const numCPUs = require('os').cpus().length;
 let websocket = clientIO.connect('ws://socket.coincap.io')
@@ -122,4 +123,10 @@ const updateDaily = new cronJob('00 30 17 * * 0-6', ()=> {
           Object.assign(coinsList[index], msg);
         }
         io.emit(msg)
+      })
+      app.post('/coin/update', (req, res, next) => {
+        console.log(req.body)
+        res.send({
+          'blarg':'blarg'
+        })
       })
