@@ -1,31 +1,71 @@
 const path = require('path');
-var app = require('express')();
-const express = require('express');
+const app = require('express')();
 const bodyParser = require('body-parser');
-const WebSocket = require('ws');
 const port = process.env.PORT || 8000;
 const cors = require('cors');
-const corsOptions = { origin: true}
 const logger = require('morgan');
 const knex = require('./db/knex');
 const cronJob = require('cron').CronJob;
 const http = require('http');
-var http2 = require( "http" ).createServer(app);
-const unixDate = require("unix-timestamp");
-
-var io = require('socket.io')(http);
+const WebSocket = require('ws');
 const clientIO = require('socket.io-client');
-const numCPUs = require('os').cpus().length;
 let websocket = clientIO.connect('ws://socket.coincap.io')
 const coins = require('./routes/coinRoutes');
 const login = require('./routes/loginRoutes');
-io.path('/grape')
+let httpServer = app.listen(port, () => console.log('listening on ', port))
+
+
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({server: httpServer})
+server.on('upgrade', wss.handleUpgrade);
+
+let CLIENTS = [];
+let sentCoins = []
+
+
+wss.on('open', ()=> {
+  wss.send('something')
+})
+
+setInterval(() => {
+  console.log(sentCoins.length)
+  sentCoins = []
+}, 300)
+
+wss.on('connection', (ws, req) => {
+  CLIENTS.push(ws)
+  websocket.on('trades', ({msg}) => {
+    if(sentCoins.findIndex((e) => e.short === msg.short) === -1) {
+      sentCoins.push(msg)
+      CLIENTS.forEach((client) => {
+        if(client.readyState !== WebSocket.OPEN){
+          console.log('Clients state is', client.readyState)
+        } else {
+          client.send(JSON.stringify(msg))
+        }
+      })
+    }
+    })
+  
+
+  ws.on('close', () => {
+    CLIENTS.splice(CLIENTS.indexOf(ws), 1)
+    console.log('disconnect')
+  })
+})
+
+wss.on('disconnect', (ws) => {
+  CLIENTS.splice(CLIENTS.indexOf(ws), 1);
+})
+
+
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({
   extended: false
@@ -34,10 +74,6 @@ app.use(bodyParser.urlencoded({
 app.use('/', coins);
 app.use('/login', login);
 
-
-app.listen(port,  () => {
-  console.log("listening on port: ", port);
-})
 
 let coinsList = []
 
@@ -111,6 +147,8 @@ const updateDaily = new cronJob('00 30 17 * * 0-6', ()=> {
       console.error(`Got error: ${e.message}`);
     });
 
+    
+
     /* Websocket from coincap that we emit */
     
       websocket.on('trades', ({msg}) => {
@@ -122,11 +160,6 @@ const updateDaily = new cronJob('00 30 17 * * 0-6', ()=> {
         } else {
           Object.assign(coinsList[index], msg);
         }
-        io.emit(msg)
       })
-      app.post('/coin/update', (req, res, next) => {
-        console.log(req.body)
-        res.send({
-          'blarg':'blarg'
-        })
-      })
+
+
