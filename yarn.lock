@@ -1165,7 +1165,7 @@ which@^1.2.12:
   dependencies:
     isexe "^2.0.0"
 
-ws@~3.3.1:
+ws@^3.3.2, ws@~3.3.1:
   version "3.3.2"
   resolved "https://registry.yarnpkg.com/ws/-/ws-3.3.2.tgz#96c1d08b3fefda1d5c1e33700d3bfaa9be2d5608"
   dependencies:
