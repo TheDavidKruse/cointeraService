@@ -7,6 +7,7 @@ const logger = require('morgan');
 const knex = require('./db/knex');
 const cronJob = require('cron').CronJob;
 const http = require('http');
+
 const WebSocket = require('ws');
 const clientIO = require('socket.io-client');
 let websocket = clientIO.connect('ws://socket.coincap.io')
